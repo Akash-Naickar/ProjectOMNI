@@ -1,0 +1,14 @@
+# Stack configuration for the Haskell crop-yield data pipeline.
+# LTS 21.25 uses GHC 9.4.8 — a stable, well-supported release.
+resolver: lts-21.25
+
+packages:
+  - .
+
+# GHC 9.4+ cannot handle spaces in paths.  The default location is
+# inside %APPDATA% which may contain spaces (e.g. "Akash KG").
+# Redirect to a space-free directory to work around this.
+local-programs-path: C:\haskell-stack
+
+# Extra dependencies not in the snapshot (if any):
+# extra-deps: []
