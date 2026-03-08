@@ -56,5 +56,3 @@ For detailed hosting instructions, including AWS, Vercel, and Railway configurat
 
 ---
 
-## ⚖️ License
-MIT License. Created for the Advanced Agentic Coding Hackathon.
