@@ -51,8 +51,4 @@ docker-compose up --build
 
 ---
 
-## 📋 Deployment
-For detailed hosting instructions, including AWS, Vercel, and Railway configurations, refer to the [Deployment Guide](./deployment_guide.md).
-
----
 
