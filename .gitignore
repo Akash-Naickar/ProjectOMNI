@@ -1,0 +1,58 @@
+# dependencies
+node_modules/
+.pnp
+.pnp.*
+
+# Haskell
+.stack-work/
+dist-newstyle/
+
+# Python
+venv/
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Data & CSVs (Large files)
+*.csv
+python-backend/data/
+my_fao_data.csv
+
+# Next.js
+.next/
+out/
+
+# Production
+/build
+
+# misc
+.DS_Store
+*.pem
+.env*
+.vercel
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# Backup
+frontend_backup/

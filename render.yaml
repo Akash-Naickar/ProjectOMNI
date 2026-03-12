@@ -1,0 +1,37 @@
+services:
+  # Python Backend API
+  - type: web
+    name: project-omni-backend
+    runtime: docker
+    dockerContext: python-backend
+    dockerfilePath: Dockerfile
+    plan: free
+    region: singapore # Adjust as needed
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: "1"
+      - key: DATA_PATH
+        value: "/app/data/cleaned_crop_data.csv"
+
+  # Next.js Frontend
+  - type: web
+    name: project-omni-frontend
+    runtime: docker
+    dockerContext: frontend
+    dockerfilePath: Dockerfile
+    plan: free
+    region: singapore
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        fromService:
+          type: web
+          name: project-omni-backend
+          property: host
+        # Since the frontend build happens in Docker, we need the build-time env
+        # Note: In Render, fromService is available at runtime. 
+        # For Next.js client-side vars, you might need to set this in the Render Dashboard 
+        # after the backend is first deployed to get the stable URL.
+    routing:
+      rewrite:
+        - source: /api/*
+          destination: http://project-omni-backend:8000/api/*
