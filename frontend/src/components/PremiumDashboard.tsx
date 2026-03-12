@@ -207,11 +207,6 @@ export default function PremiumDashboard() {
             if (!meta.countries.includes("India")) {
                 const availableCountry = meta.countries[0];
                 setSelectedCountry(availableCountry);
-                
-                const firstCrop = data.find((d: CropData) => d.Country === availableCountry)?.Crop;
-                if (firstCrop) {
-                    setSelectedCrop(firstCrop);
-                }
             }
         }
       } catch (err: any) {
