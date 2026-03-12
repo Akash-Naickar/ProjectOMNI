@@ -798,10 +798,12 @@ class ClimateAPIHandler(BaseHTTPRequestHandler):
         pass
 
 def run_server():
-    port = 8000
-    server_address = ('', port)
+    # Use Render's PORT environment variable or default to 8000
+    port = int(os.environ.get("PORT", 8000))
+    # Listen on all interfaces (0.0.0.0) for cloud deployment
+    server_address = ('0.0.0.0', port)
     httpd = ThreadingHTTPServer(server_address, ClimateAPIHandler)
-    logging.info(f"🚀 Climate Resilience API (No-Dep) running on http://localhost:{port}")
+    logging.info(f"🚀 Climate Resilience API (No-Dep) running on port {port}")
     try:
         httpd.serve_forever()
     except KeyboardInterrupt:
@@ -809,5 +811,8 @@ def run_server():
     httpd.server_close()
 
 if __name__ == "__main__":
-    load_and_train()
+    import threading
+    # Launch heavy data loading/training in a background thread
+    # This ensures the HTTP server starts immediately, avoiding Render's port detection timeout
+    threading.Thread(target=load_and_train, daemon=True).start()
     run_server()
