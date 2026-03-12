@@ -641,7 +641,19 @@ class ClimateAPIHandler(BaseHTTPRequestHandler):
             })
 
         elif path == "/api/data":
-            self.send_json_response(df_historical)
+            country_filter = query_params.get("country", [None])[0]
+            crop_filter = query_params.get("crop", [None])[0]
+            
+            if country_filter or crop_filter:
+                filtered = [
+                    row for row in df_historical 
+                    if (not country_filter or row["Country"] == country_filter) and 
+                       (not crop_filter or row["Crop"] == crop_filter)
+                ]
+                self.send_json_response(filtered)
+            else:
+                # Still support full dump if needed, but consider limiting
+                self.send_json_response(df_historical[:1000]) # Limit return if no filters provided
 
         elif path == "/api/predict":
             if not model.is_trained:

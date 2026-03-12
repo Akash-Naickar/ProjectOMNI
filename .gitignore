@@ -34,7 +34,8 @@ wheels/
 
 # Data & CSVs (Large files)
 *.csv
-python-backend/data/
+!python-backend/data/cleaned_crop_data.csv
+python-backend/data/fao_data/
 my_fao_data.csv
 
 # Next.js
