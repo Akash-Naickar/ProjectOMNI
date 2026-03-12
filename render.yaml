@@ -31,7 +31,7 @@ services:
         # Note: In Render, fromService is available at runtime. 
         # For Next.js client-side vars, you might need to set this in the Render Dashboard 
         # after the backend is first deployed to get the stable URL.
-    routing:
-      rewrite:
-        - source: /api/*
-          destination: http://project-omni-backend:8000/api/*
+    routes:
+      - type: rewrite
+        source: /api/*
+        destination: http://project-omni-backend:8000/api/*
