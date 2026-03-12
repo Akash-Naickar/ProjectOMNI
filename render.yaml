@@ -6,9 +6,24 @@ services:
     dockerContext: python-backend
     dockerfilePath: python-backend/Dockerfile
     plan: free
-    region: singapore # Adjust as needed
+    region: singapore
     envVars:
       - key: PYTHONUNBUFFERED
         value: "1"
       - key: DATA_PATH
         value: "/app/data/cleaned_crop_data.csv"
+
+  # Next.js Frontend
+  - type: web
+    name: project-omni-frontend
+    runtime: docker
+    dockerContext: frontend
+    dockerfilePath: frontend/Dockerfile
+    plan: free
+    region: singapore
+    envVars:
+      - key: NEXT_PUBLIC_API_URL
+        # In a Blueprint, we can't easily reference the backend's external URL here
+        # without it being deployed first. But for initial setup, we can leave it empty
+        # or have the user fill it in after the backend is live.
+        value: "" 
