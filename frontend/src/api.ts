@@ -5,7 +5,19 @@
  * Uses native `fetch` and structured TypeScript interfaces for type safety.
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000/api";
+let API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+
+// Ensure the base URL is standardized
+if (API_BASE_URL.endsWith("/")) {
+  API_BASE_URL = API_BASE_URL.slice(0, -1);
+}
+
+// Automatically append /api if not present in the URL
+if (!API_BASE_URL.includes("/api") && !API_BASE_URL.includes("localhost")) {
+  API_BASE_URL = `${API_BASE_URL}/api`;
+} else if (API_BASE_URL === "http://localhost:8000") {
+  API_BASE_URL = "http://localhost:8000/api";
+}
 
 // --- Types ---
 

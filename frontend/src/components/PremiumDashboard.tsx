@@ -215,7 +215,7 @@ export default function PremiumDashboard() {
             }
         }
       } catch (err: any) {
-        setError("Failed to connect to API. Make sure the Python backend is running on port 8000.");
+        setError(`Failed to connect to API at ${process.env.NEXT_PUBLIC_API_URL || "localhost"}. Please ensure the backend is running and the URL is correct.`);
         console.error(err);
       } finally {
         setLoading(false);
