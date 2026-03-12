@@ -1,44 +1,17 @@
-# ============================================================================
-# Project Omni — Docker Compose
-# ============================================================================
-# Three-service architecture:
-#   1. haskell-pipeline: Runs once to clean CSV data
-#   2. python-backend:   ML API server (port 8000)
-#   3. frontend:         Next.js dashboard (port 3000)
-# ============================================================================
-
 services:
-  # --- Phase 1: Haskell Data Ingestion ---
-  haskell-pipeline:
-    build:
-      context: ./haskell-pipeline
-      dockerfile: Dockerfile
-    volumes:
-      - pipeline-data:/app
-    restart: "no"
-
-  # --- Phase 2: Python ML API ---
-  python-backend:
-    build:
+  backend:
+    build: 
       context: ./python-backend
       dockerfile: Dockerfile
     ports:
       - "8000:8000"
     volumes:
-      - pipeline-data:/data
+      - ./python-backend:/app
+      - ./haskell-pipeline:/app/haskell-pipeline
     environment:
-      - DATA_PATH=/data/cleaned_crop_data.csv
-    depends_on:
-      haskell-pipeline:
-        condition: service_completed_successfully
+      - PYTHONUNBUFFERED=1
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/')"]
-      interval: 10s
-      timeout: 5s
-      retries: 3
 
-  # --- Phase 3: Next.js Frontend ---
   frontend:
     build:
       context: ./frontend
@@ -48,9 +21,5 @@ services:
     environment:
       - NEXT_PUBLIC_API_URL=http://localhost:8000/api
     depends_on:
-      python-backend:
-        condition: service_healthy
+      - backend
     restart: unless-stopped
-
-volumes:
-  pipeline-data:

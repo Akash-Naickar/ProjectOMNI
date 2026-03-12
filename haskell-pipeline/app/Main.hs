@@ -1,4 +1,4 @@
-{- |
+{-
 Module      : Main
 Description : Entry point for the Haskell crop-yield data pipeline.
 
