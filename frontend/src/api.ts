@@ -100,8 +100,12 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise
 
 // --- API Methods ---
 
-export async function fetchHistoricalData(): Promise<CropData[]> {
-  return apiFetch<CropData[]>("/data");
+export async function fetchHistoricalData(country?: string, crop?: string): Promise<CropData[]> {
+  const params = new URLSearchParams();
+  if (country) params.append("country", country);
+  if (crop) params.append("crop", crop);
+  const query = params.toString();
+  return apiFetch<CropData[]>(`/data${query ? `?${query}` : ""}`);
 }
 
 export async function fetchResilienceScores(limit: number = 10, crop?: string): Promise<ResilienceScore[]> {

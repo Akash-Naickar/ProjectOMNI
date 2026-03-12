@@ -192,17 +192,17 @@ export default function PremiumDashboard() {
   useEffect(() => {
     const loadAll = async () => {
       try {
-        const [data, scores, meta] = await Promise.all([
-          fetchHistoricalData(),
+        const [scores, meta] = await Promise.all([
           fetchResilienceScores(10),
           fetchMetadata(),
         ]);
-        setHistoricalData(data);
         setResilienceScores(scores);
         setMetadata(meta);
         
-        // If the initially selected country (India) doesn't exist in our custom data, 
-        // fallback to the first available country and crop so the dashboard isn't empty.
+        // Initial historical data fetch for the default selection
+        const initialData = await fetchHistoricalData(selectedCountry, selectedCrop);
+        setHistoricalData(initialData);
+        
         if (meta && meta.countries && meta.countries.length > 0) {
             if (!meta.countries.includes("India")) {
                 const availableCountry = meta.countries[0];
@@ -236,6 +236,21 @@ export default function PremiumDashboard() {
         rollingAvg: d.RollingAvg_5yr,
       }));
   }, [historicalData, selectedCountry, selectedCrop]);
+
+  // --- Fetch filtered historical data when selection changes ---
+  useEffect(() => {
+    const refreshData = async () => {
+        try {
+            const data = await fetchHistoricalData(selectedCountry, selectedCrop);
+            setHistoricalData(data);
+        } catch (err) {
+            console.error("Failed to refresh historical data", err);
+        }
+    };
+    if (selectedCountry && selectedCrop) {
+        refreshData();
+    }
+  }, [selectedCountry, selectedCrop]);
 
   // --- Fetch specific score when selection changes ---
   useEffect(() => {
