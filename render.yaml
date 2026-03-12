@@ -4,7 +4,7 @@ services:
     name: project-omni-backend
     runtime: docker
     dockerContext: python-backend
-    dockerfilePath: Dockerfile
+    dockerfilePath: python-backend/Dockerfile
     plan: free
     region: singapore # Adjust as needed
     envVars:
