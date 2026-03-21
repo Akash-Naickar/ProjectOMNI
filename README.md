@@ -60,5 +60,4 @@ A premium frontend experience:
 
 ## ⚖️ License
 
-MIT License. Created for the Advanced Agentic Coding Hackathon.
-
+MIT License. 
