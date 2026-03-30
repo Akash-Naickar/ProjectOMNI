@@ -8,10 +8,9 @@ import {
   CartesianGrid,
   Tooltip as RechartsTooltip,
   ResponsiveContainer,
-  BarChart,
+  ComposedChart,
   Bar,
   Cell,
-  ComposedChart,
   ErrorBar,
   Legend as RechartsLegend,
   RadarChart,
@@ -26,7 +25,7 @@ import {
   LineChart,
   Line,
 } from "recharts";
-import { Sprout, ThermometerSun, ShieldCheck, ChevronDown, MapPin, Globe, BarChart3, Loader2, TrendingUp, Crosshair, Download, FileText, Box, Bot, Activity, AlertTriangle } from "lucide-react";
+import { Sprout, ThermometerSun, ChevronDown, MapPin, Globe, BarChart3, Loader2, TrendingUp, Crosshair, Download, FileText, Box, Bot, Activity, AlertTriangle } from "lucide-react";
 import {
   fetchHistoricalData,
   fetchResilienceScores,
@@ -43,18 +42,6 @@ import {
   type TimeseriesData,
   type MarketSimulationResult,
 } from "../api";
-
-import {
-  Chart as ChartJS,
-  LinearScale,
-  PointElement,
-  Tooltip as ChartTooltip,
-  Legend
-} from 'chart.js';
-import { Scatter } from 'react-chartjs-2';
-import annotationPlugin from 'chartjs-plugin-annotation';
-
-ChartJS.register(LinearScale, PointElement, ChartTooltip, Legend, annotationPlugin);
 
 import Timeline from "./Timeline";
 
@@ -153,8 +140,6 @@ const ComparativeTooltip = ({ active, payload, label }: any) => {
 export default function PremiumDashboard() {
   // Data state
   const [historicalData, setHistoricalData] = useState<CropData[]>([]);
-  const [resilienceScores, setResilienceScores] = useState<ResilienceScore[]>([]);
-  const [cropScatterScores, setCropScatterScores] = useState<ResilienceScore[]>([]);
   const [currentScore, setCurrentScore] = useState<ResilienceScore | null>(null);
   const [metadata, setMetadata] = useState<MetadataResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -192,11 +177,7 @@ export default function PremiumDashboard() {
   useEffect(() => {
     const loadAll = async () => {
       try {
-        const [scores, meta] = await Promise.all([
-          fetchResilienceScores(10),
-          fetchMetadata(),
-        ]);
-        setResilienceScores(scores);
+        const meta = await fetchMetadata();
         setMetadata(meta);
         
         // Initial historical data fetch for the default selection
@@ -270,11 +251,6 @@ export default function PremiumDashboard() {
       fetchTimeseriesMap(selectedCrop)
         .then(setTimeseriesData)
         .catch(console.error);
-        
-      // Fetch fully populated scatter plot data (limit 1000 ensures ALL countries for this crop are retrieved)
-      fetchResilienceScores(1000, selectedCrop)
-        .then(setCropScatterScores)
-        .catch(console.error);
     }
   }, [selectedCrop]);
 
@@ -289,11 +265,21 @@ export default function PremiumDashboard() {
   }, [filteredTimeSeries]);
 
   const availableCrops = useMemo(() => {
+    // FIX: Use country-specific crops if available to avoid empty dashboards
+    if (metadata?.country_crop_map && metadata.country_crop_map[selectedCountry]) {
+      return metadata.country_crop_map[selectedCountry];
+    }
+    
+    // Fallback logic for initial load or older backends
+    if (metadata?.crops && metadata.crops.length > 0 && !metadata.country_crop_map) {
+      return metadata.crops;
+    }
+
     const crops = new Set(
       historicalData.filter((d) => d.Country === selectedCountry).map((d) => d.Crop)
     );
     return Array.from(crops).sort();
-  }, [historicalData, selectedCountry]);
+  }, [historicalData, selectedCountry, metadata]);
 
   const availableCountries = useMemo(() => {
     return metadata?.countries || [];
@@ -423,75 +409,6 @@ export default function PremiumDashboard() {
     }
   }, [selectedCountry, selectedCrop]);
 
-  // --- Scatter Plot Logic ---
-  const scatterData = useMemo(() => {
-    return {
-      datasets: [
-        {
-          label: 'Countries',
-          data: cropScatterScores.map(d => ({
-            x: d.resilience_score,
-            y: -d.correlation, // Negative correlation = High sensitivity to temp
-            country: d.country,
-            crop: d.crop
-          })),
-          backgroundColor: '#10b981',
-          pointRadius: 6,
-          pointHoverRadius: 8,
-          borderColor: '#ffffff',
-          borderWidth: 1,
-        }
-      ]
-    };
-  }, [cropScatterScores]);
-
-  const scatterOptions = useMemo(() => {
-    return {
-      responsive: true,
-      maintainAspectRatio: false,
-      scales: {
-        x: {
-          title: { display: true, text: 'Resilience Score', color: '#64748b', font: { weight: 'bold' } },
-          min: 0, max: 10,
-          grid: { display: false },
-          ticks: { color: '#94a3b8' }
-        },
-        y: {
-          title: { display: true, text: 'Climate Sensitivity', color: '#64748b', font: { weight: 'bold' } },
-          min: -1, max: 1,
-          grid: { display: false },
-          ticks: { color: '#94a3b8' }
-        }
-      },
-      plugins: {
-        legend: { display: false },
-        tooltip: {
-          backgroundColor: 'rgba(255, 255, 255, 0.9)',
-          titleColor: '#1e293b',
-          bodyColor: '#334155',
-          borderColor: '#e2e8f0',
-          borderWidth: 1,
-          padding: 10,
-          callbacks: {
-            label: (ctx: any) => {
-              const row = ctx.raw;
-              return `${row.country}: Res ${row.x.toFixed(1)}, Sens ${row.y.toFixed(2)}`;
-            }
-          }
-        },
-        annotation: {
-          annotations: {
-            line1: { type: 'line', yMin: 0, yMax: 0, borderColor: '#cbd5e1', borderWidth: 2, borderDash: [4, 4] },
-            line2: { type: 'line', xMin: 5, xMax: 5, borderColor: '#cbd5e1', borderWidth: 2, borderDash: [4, 4] },
-            labelTL: { type: 'label', xValue: 2.5, yValue: 0.8, content: ['Low Resilience', 'High Sens'], color: '#94a3b8', font: { size: 12, weight: 'bold' } },
-            labelTR: { type: 'label', xValue: 7.5, yValue: 0.8, content: ['High Resilience', 'High Sens'], color: '#94a3b8', font: { size: 12, weight: 'bold' } },
-            labelBL: { type: 'label', xValue: 2.5, yValue: -0.8, content: ['Low Resilience', 'Low Sens'], color: '#94a3b8', font: { size: 12, weight: 'bold' } },
-            labelBR: { type: 'label', xValue: 7.5, yValue: -0.8, content: ['High Resilience', 'Low Sens'], color: '#94a3b8', font: { size: 12, weight: 'bold' } }
-          }
-        }
-      }
-    };
-  }, []);
 
   // --- Extract Omni Super-Prediction ---
   const omniPrediction = useMemo(() => {
@@ -864,24 +781,23 @@ export default function PremiumDashboard() {
           </div>
         </motion.div>
 
-        {/* Metric Card 3: Resilience Score */}
-        <motion.div variants={itemVariants} whileHover={{ y: -5 }} className="glass-card group">
+        {/* Metric Card 3: Pearson Correlation */}
+        <motion.div variants={itemVariants} whileHover={{ y: -5 }} className="glass-card group border-l-4 border-cyan-500">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-sm font-medium text-slate-500 mb-1">Resilience Score</p>
+              <p className="text-sm font-medium text-slate-500 mb-1">Pearson Correlation (r)</p>
               <h3 className="text-4xl font-bold tracking-tight text-slate-800">
-                {currentScore?.resilience_score?.toFixed(1) || "—"} <span className="text-xl font-medium text-slate-400">/ 10</span>
+                {currentScore?.correlation?.toFixed(3) || "—"}
               </h3>
             </div>
             <div className="p-3 bg-cyan-100/50 rounded-xl group-hover:bg-cyan-100 transition-colors">
-              <ShieldCheck className="w-6 h-6 text-cyan-500" />
+              <Activity className="w-6 h-6 text-cyan-600" />
             </div>
           </div>
           <div className="mt-4 flex items-center gap-2 text-sm text-cyan-600 font-medium">
-            <span className="px-2 py-0.5 bg-cyan-100 rounded-full capitalize">
-              {currentScore?.trend || "—"}
+            <span className={`px-2 py-0.5 rounded-full ${currentScore?.trend === "increasing" ? "bg-emerald-100 text-emerald-600" : currentScore?.trend === "decreasing" ? "bg-red-100 text-red-600" : "bg-slate-100 text-slate-600"}`}>
+              Trend: {currentScore?.trend || "—"}
             </span>
-            <span>r={currentScore?.correlation?.toFixed(3) || "—"}</span>
           </div>
         </motion.div>
 
@@ -983,46 +899,6 @@ export default function PremiumDashboard() {
         )}
 
 
-        {/* Row 2: Scatter Plot & Regional Resilience */}
-        <div className="col-span-1 md:col-span-3 grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Left: Scatter Plot */}
-          <motion.div variants={itemVariants} className="glass-card col-span-1 md:col-span-2 h-[400px] flex flex-col">
-            <h2 className="text-xl font-semibold tracking-tight text-slate-800 mb-6">Resilience vs. Climate Sensitivity</h2>
-            <div className="flex-1 w-full min-h-0 relative">
-              <Scatter data={scatterData} options={scatterOptions as any} />
-            </div>
-          </motion.div>
-          
-          {/* Right: Regional Resilience Ranking */}
-          <motion.div variants={itemVariants} className="glass-card col-span-1 h-[400px] flex flex-col">
-            <h2 className="text-xl font-semibold tracking-tight text-slate-800 mb-6">Regional Resilience Ranking</h2>
-            <div className="flex-1 w-full min-h-0">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={resilienceScores.slice(0, 8)} margin={{ top: 10, right: 10, left: -20, bottom: 65 }} barSize={32}>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                  <XAxis
-                    dataKey={(d: ResilienceScore) => `${d.country}\n${d.crop}`}
-                    axisLine={false} 
-                    tickLine={false}
-                    interval={0}
-                    tick={<CustomXAxisTick />}
-                  />
-                  <YAxis axisLine={false} tickLine={false} tick={{ fill: '#64748b', fontSize: 12, fontWeight: 500 }} domain={[0, 10]} />
-                  <RechartsTooltip
-                    cursor={{ fill: '#f1f5f9' }}
-                    contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }}
-                    formatter={(value: any) => [`${value}/10`, "Resilience"]}
-                  />
-                  <Bar dataKey="resilience_score" radius={[6, 6, 0, 0]}>
-                    {resilienceScores.slice(0, 8).map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.resilience_score > 7 ? '#0ea5e9' : entry.resilience_score > 5 ? '#f59e0b' : '#ef4444'} />
-                    ))}
-                  </Bar>
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-          </motion.div>
-        </div>
 
         {/* Bottom Row: Prediction Panel Expanded */}
         <motion.div variants={itemVariants} className="glass-card col-span-1 md:col-span-3 h-auto min-h-[250px] relative overflow-hidden flex flex-col border-[2px] border-emerald-400/30 shadow-xl shadow-emerald-900/5 bg-white/90">

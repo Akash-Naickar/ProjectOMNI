@@ -7,15 +7,15 @@
 
 let API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
 
-// Ensure the base URL is standardized
-if (API_BASE_URL.endsWith("/")) {
-  API_BASE_URL = API_BASE_URL.slice(0, -1);
-}
+// Ensure the base URL is standardized and doesn't have a trailing slash
+API_BASE_URL = API_BASE_URL.replace(/\/$/, "");
 
-// Automatically append /api if not present in the URL
-if (!API_BASE_URL.includes("/api") && !API_BASE_URL.includes("localhost")) {
+// Standardize the API prefix
+// If it's a production URL (doesn't contain localhost), append /api if not already there
+if (!API_BASE_URL.includes("localhost") && !API_BASE_URL.endsWith("/api")) {
   API_BASE_URL = `${API_BASE_URL}/api`;
 } else if (API_BASE_URL === "http://localhost:8000") {
+  // Local development default
   API_BASE_URL = "http://localhost:8000/api";
 }
 
@@ -32,6 +32,7 @@ export interface CropData {
 
 export interface ResilienceScore {
   country: string;
+  iso_a3?: string;
   crop: string;
   resilience_score: number;
   correlation: number;
@@ -42,6 +43,7 @@ export interface ResilienceScore {
 
 export interface PredictionResult {
   country: string;
+  iso_a3?: string;
   crop: string;
   year: number;
   temp_increase_c: number;
@@ -61,6 +63,7 @@ export interface MarketSimulationResult {
 export interface MetadataResponse {
   countries: string[];
   crops: string[];
+  country_crop_map?: Record<string, string[]>;
   year_range: [number, number];
   total_records: number;
   available_models: string[];

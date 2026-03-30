@@ -12,6 +12,8 @@ services:
         value: "1"
       - key: DATA_PATH
         value: "/app/data/cleaned_crop_data.csv"
+      - key: GEMINI_API_KEY
+        value: "" # Set this in the Render dashboard
 
   # Next.js Frontend
   - type: web
@@ -23,7 +25,4 @@ services:
     region: singapore
     envVars:
       - key: NEXT_PUBLIC_API_URL
-        # In a Blueprint, we can't easily reference the backend's external URL here
-        # without it being deployed first. But for initial setup, we can leave it empty
-        # or have the user fill it in after the backend is live.
-        value: "" 
+        value: "" # Set this to the backend's .onrender.com URL after it's deployed

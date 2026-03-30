@@ -3,13 +3,20 @@ import json
 import logging
 import math
 import os
+import pycountry
+
+import logging
+import math
+import os
 from http.server import HTTPServer, BaseHTTPRequestHandler
 from socketserver import ThreadingMixIn
 from urllib.parse import urlparse, parse_qs
 # Configure Gemini
 try:
     import google.generativeai as genai
-    genai.configure(api_key="AIzaSyA6HNV0S15AJCpX6pJucwZM_LWNxyxZJoM")
+    # Move API key to environment variable for production security
+    api_key = os.environ.get("GEMINI_API_KEY", "[ENCRYPTION_KEY]")
+    genai.configure(api_key=api_key)
     gemini_model = genai.GenerativeModel('gemini-2.5-flash')
     GEMINI_ENABLED = True
 except Exception as e:
@@ -28,6 +35,46 @@ all_scores_list = []
 all_scores_dict = {}
 unique_countries = set()
 unique_crops = set()
+
+# Fast alias dictionary for specific FAO/non-standard names
+# Load Registries
+def load_registry(filename):
+    path = os.path.join(os.path.dirname(__file__), "data", filename)
+    if os.path.exists(path):
+        with open(path, "r", encoding="utf-8") as f:
+            return json.load(f)
+    return {}
+
+COUNTRY_REGISTRY = load_registry("country_registry.json")
+CROP_REGISTRY = load_registry("crop_registry.json")
+
+def get_iso3(country_name: str) -> str | None:
+    if not country_name:
+        return None
+    
+    # 1. Check Registry (Highest priority)
+    if country_name in COUNTRY_REGISTRY:
+        return COUNTRY_REGISTRY[country_name].get("iso3")
+    
+    # 2. Check if already an Alpha-3 code
+    if len(country_name) == 3:
+        try:
+            res = pycountry.countries.get(alpha_3=country_name.upper())
+            if res: return res.alpha_3
+        except: pass
+
+    # 3. Standard Lookup
+    try:
+        res = pycountry.countries.lookup(country_name)
+        return res.alpha_3
+    except LookupError:
+        # 4. Historic Lookup (e.g. USSR -> SUN)
+        try:
+            res = pycountry.historic_countries.lookup(country_name)
+            return res.alpha_3
+        except LookupError:
+            return None
+
 
 DATA_PATH = os.environ.get("DATA_PATH", "")
 if not DATA_PATH:
@@ -517,8 +564,8 @@ def load_and_train():
         logging.info("Training OLS Regression models...")
         model.fit(df_historical)
 
-        # 2. Compute Resilience Scores (Manual Pearson Correlation)
-        logging.info("Computing Climate Resilience Scores...")
+        # 2. Compute Pearson Correlation Statistics (Climate Stability Analysis)
+        logging.info("Computing Pearson Correlation Statistics...")
         groups = {}
         for row in df_historical:
             key = (row["Country"], row["Crop"])
@@ -584,7 +631,16 @@ def load_and_train():
         resilience_scores = sorted(filtered_for_leaderboard, key=lambda x: (x["resilience_score"], x["data_points"], x["avg_yield"]), reverse=True)
 
         if resilience_scores:
-            logging.info(f"Top Resilient Crop/Region: {resilience_scores[0]['country']} - {resilience_scores[0]['crop']}")
+            logging.info(f"Leading Climate-Stable Region: {resilience_scores[0]['country']} - {resilience_scores[0]['crop']}")
+
+        # Startup Coverage Assertion
+        unique_isos = set(get_iso3(s["country"]) for s in all_scores_list if get_iso3(s["country"]))
+        coverage_pct = (len(unique_isos) / 245) * 100 # Baseline based on total FAO countries seen in audit
+        logging.info(f"[Startup] ISO Coverage: {len(unique_isos)} countries ({coverage_pct:.1f}%)")
+        
+        if coverage_pct < 50:
+             logging.error("CRITICAL: ISO Coverage dropped below safety baseline (50%). Check registries!")
+             # In production, we might sys.exit(1), but for dev we just alert loudly.
 
 
 # =============================================================================
@@ -600,7 +656,7 @@ class ClimateAPIHandler(BaseHTTPRequestHandler):
             self.send_response(status_code)
             self.send_header('Content-type', 'application/json')
             self.send_header('Access-Control-Allow-Origin', '*')
-            self.send_header('Access-Control-Allow-Methods', 'GET, OPTIONS')
+            self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
             self.send_header('Access-Control-Allow-Headers', 'X-Requested-With, Content-type')
             self.end_headers()
             self.wfile.write(json.dumps(data).encode('utf-8'))
@@ -611,7 +667,7 @@ class ClimateAPIHandler(BaseHTTPRequestHandler):
         try:
             self.send_response(200)
             self.send_header('Access-Control-Allow-Origin', '*')
-            self.send_header('Access-Control-Allow-Methods', 'GET, OPTIONS')
+            self.send_header('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
             self.send_header('Access-Control-Allow-Headers', 'X-Requested-With, Content-type')
             self.end_headers()
         except OSError:
@@ -631,9 +687,19 @@ class ClimateAPIHandler(BaseHTTPRequestHandler):
 
         elif path == "/api/metadata":
             years = [r["Year"] for r in df_historical] if df_historical else []
+            country_crop_map = {}
+            if df_historical:
+                for row in df_historical:
+                    c = row["Country"]
+                    cr = row["Crop"]
+                    if c not in country_crop_map:
+                        country_crop_map[c] = set()
+                    country_crop_map[c].add(cr)
+                    
             self.send_json_response({
                 "countries": sorted(list(unique_countries)),
                 "crops": sorted(list(unique_crops)),
+                "country_crop_map": {k: sorted(list(v)) for k, v in country_crop_map.items()},
                 "year_range": [min(years), max(years)] if years else [],
                 "total_records": len(df_historical),
                 "available_models": model.get_available_models(),
@@ -677,6 +743,7 @@ class ClimateAPIHandler(BaseHTTPRequestHandler):
 
                 response_data = {
                     "country": country,
+                    "iso_a3": get_iso3(country), # Add ISO A3 code
                     "crop": crop,
                     "year": year,
                     "temp_increase_c": temp_increase,
@@ -693,10 +760,22 @@ class ClimateAPIHandler(BaseHTTPRequestHandler):
             except (ValueError, IndexError):
                 self.send_json_response({"error": "Invalid parameters"}, 400)
 
+        elif path == "/api/debug/coverage":
+            # Diagnostic endpoint to provably trace where countries are dropped
+            stats = {
+                "total_cleaned_tuples": len(all_scores_list),
+                "unique_countries": len(set(s["country"] for s in all_scores_list)),
+                "iso_mapped": sum(1 for s in all_scores_list if get_iso3(s["country"])),
+                "unmapped": sorted(list(set(s["country"] for s in all_scores_list if not get_iso3(s["country"]))))
+            }
+            self.send_json_response(stats)
+
         elif path == "/api/resilience":
             try:
-                limit = int(query_params.get("limit", [10])[0])
+                # DEFAULT LIMIT: 10 for global leaderboard, 2000 if crop is selected for map
                 crop_filter = query_params.get("crop", [None])[0]
+                default_limit = 2000 if crop_filter else 10
+                limit = int(query_params.get("limit", [default_limit])[0])
                 country_filter = query_params.get("country", [None])[0]
             except ValueError:
                 limit = 10
@@ -715,7 +794,31 @@ class ClimateAPIHandler(BaseHTTPRequestHandler):
             else:
                 data_to_return = resilience_scores
                 
-            response_data = {"top_resilient": data_to_return[:limit]}
+            # Ensure iso_a3 and metadata are present
+            enriched_data = []
+            seen_isos = set()
+            
+            for s in data_to_return:
+                iso = s.get("iso_a3") or get_iso3(s["country"])
+                if not iso:
+                    s["exclusion_reason"] = "no_iso"
+                    continue
+                
+                s["iso_a3"] = iso
+                
+                # Deduplicate by ISO for the Map view (avoid overlapping dots/colors)
+                if crop_filter:
+                    if iso in seen_isos:
+                        continue
+                    seen_isos.add(iso)
+                
+                enriched_data.append(s)
+
+            response_data = {"top_resilient": enriched_data[:limit]}
+            
+            # Boundary Logging
+            logging.info(f"[API] /api/resilience: crop={crop_filter}, limit={limit}, returned={len(enriched_data[:limit])}")
+            
             self.send_json_response(response_data)
 
         elif path == "/api/timeseries-map":

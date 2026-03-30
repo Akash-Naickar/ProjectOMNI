@@ -1,0 +1,16 @@
+{
+  "Wheat": {"display": "Wheat", "api_key": "Wheat", "normalized": "wheat"},
+  "Rice, paddy": {"display": "Rice", "api_key": "Rice, paddy", "normalized": "rice"},
+  "Maize (corn)": {"display": "Maize", "api_key": "Maize (corn)", "normalized": "maize"},
+  "Barley": {"display": "Barley", "api_key": "Barley", "normalized": "barley"},
+  "Soybeans": {"display": "Soybeans", "api_key": "Soybeans", "normalized": "soybeans"},
+  "Potatoes": {"display": "Potatoes", "api_key": "Potatoes", "normalized": "potatoes"},
+  "Millet": {"display": "Millet", "api_key": "Millet", "normalized": "millet"},
+  "Sorghum": {"display": "Sorghum", "api_key": "Sorghum", "normalized": "sorghum"},
+  "Cassava, fresh": {"display": "Cassava", "api_key": "Cassava, fresh", "normalized": "cassava"},
+  "Sweet potatoes": {"display": "Sweet Potatoes", "api_key": "Sweet potatoes", "normalized": "sweet_potatoes"},
+  "Almonds, in shell": {"display": "Almonds", "api_key": "Almonds, in shell", "normalized": "almonds"},
+  "Buckwheat": {"display": "Buckwheat", "api_key": "Buckwheat", "normalized": "buckwheat"},
+  "Cabbages": {"display": "Cabbages", "api_key": "Cabbages", "normalized": "cabbages"},
+  "Milk, Total": {"display": "Milk", "api_key": "Milk, Total", "normalized": "milk"}
+}

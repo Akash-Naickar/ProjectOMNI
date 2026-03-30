@@ -6,7 +6,7 @@ import type { MapRef } from "react-map-gl/maplibre";
 import 'maplibre-gl/dist/maplibre-gl.css';
 import type { GeoJSON as GeoJSONType } from "geojson";
 import { fetchResilienceScores, type ResilienceScore, type PredictionResult, fetchPrediction, type TimeseriesData } from "../api";
-import { Globe, Map as MapIcon } from "lucide-react";
+import { Globe, Map as MapIcon, Activity } from "lucide-react";
 
 function scoreToColor(score: number): string {
   if (score >= 8) return "#10b981";     // emerald-500
@@ -22,46 +22,7 @@ function scoreToFill(score: number): string {
   return "rgba(239, 68, 68, 0.3)";
 }
 
-// Map GeoJSON names to Backend API (FAO) names
-const COUNTRY_MAPPING: Record<string, string> = {
-  // GeoJSON Name -> FAO Name
-  "Iran": "Iran (Islamic Republic of)",
-  "Russia": "Russian Federation",
-  "United Kingdom": "United Kingdom of Great Britain and Northern Ireland",
-  "Turkey": "Türkiye",
-  "Vietnam": "Viet Nam",
-  "South Korea": "Republic of Korea",
-  "North Korea": "Democratic People's Republic of Korea",
-  "Syria": "Syrian Arab Republic",
-  "Venezuela": "Venezuela (Bolivarian Republic of)",
-  "Bolivia": "Bolivia (Plurinational State of)",
-  "Laos": "Lao People's Democratic Republic",
-  "Moldova": "Republic of Moldova",
-  "Brunei": "Brunei Darussalam",
-  "Ivory Coast": "Côte d'Ivoire",
-  "Czech Republic": "Czechoslovakia",
-  "Czechia": "Czechoslovakia",
-  "Taiwan": "China, Taiwan Province of",
-  "Netherlands": "Netherlands (Kingdom of the)",
-  "Republic of the Congo": "Congo",
-  "Democratic Republic of the Congo": "Congo",
-  "Republic of Serbia": "Serbia",
-  "East Timor": "Timor-Leste",
-  "eSwatini": "Eswatini",
-  "Hong Kong S.A.R.": "China, Hong Kong SAR",
-  "Macao S.A.R": "China, Macao SAR",
-  "The Bahamas": "Bahamas",
-  "São Tomé and Principe": "Sao Tome and Principe",
-  "Federated States of Micronesia": "Micronesia (Federated States of)",
-  "Sudan": "Sudan (former)",
-  "South Sudan": "Sudan (former)",
-  "United Republic of Tanzania": "United Republic of Tanzania",
-  "Ethiopia": "Ethiopia PDR",
-  "Tanzania": "United Republic of Tanzania",
-  "United States of America": "United States of America",
-  "Philippines": "Philippines",
-  "Egypt": "Egypt"
-};
+// Standardised isoA3 lookups replace COUNTRY_MAPPING
 
 interface GlobeViewProps {
   onPrediction?: (result: PredictionResult) => void;
@@ -102,19 +63,28 @@ export default function GlobeView({ onPrediction, showSatellite = false, selecte
   const scoreMap = useMemo(() => {
     const m: Record<string, ResilienceScore> = {};
     scores.forEach((s) => {
-      // If a selectedCrop is provided, only keep scores for that crop
-      if (selectedCrop && s.crop !== selectedCrop) {
-        return;
-      }
+      if (!s.iso_a3) return; // Need an ISO code to map
+      if (selectedCrop && s.crop !== selectedCrop) return;
+      
       // Keep best resilience score per country (or exact match if filtered by crop)
-      if (!m[s.country] || s.resilience_score > m[s.country].resilience_score) {
-        m[s.country] = s;
+      if (!m[s.iso_a3] || s.resilience_score > m[s.iso_a3].resilience_score) {
+        m[s.iso_a3] = s;
       }
     });
     return m;
   }, [scores, selectedCrop]);
 
   // --- 🌟 MapLibre Performance Optimization 🌟 ---
+  
+  // Create an index of FAO Names -> ISO Codes to allow timeseries joins even without scores
+  const nameToIsoMap = useMemo(() => {
+    const m: Record<string, string> = {};
+    // Extract from scores first
+    scores.forEach(s => { if (s.iso_a3) m[s.country] = s.iso_a3; });
+    // Supplement from common registry known codes if possible
+    return m;
+  }, [scores]);
+
   // STATIC base geography (runs ONCE when world geojson loads)
   const baseGeoData = useMemo(() => {
     if (!worldGeoJson) return null;
@@ -123,34 +93,28 @@ export default function GlobeView({ onPrediction, showSatellite = false, selecte
     const features = (worldGeoJson as any).features.map((f: any) => {
       const props = f.properties || {};
       const geoName = props.ADMIN || props.name || "";
-      const isoA3 = props.ISO_A3 || props.ADM0_A3 || "";
       
-      let faoName = COUNTRY_MAPPING[geoName];
-      if (!faoName && isoA3) {
-        const isoMapping: Record<string, string> = {
-          "USA": "United States of America", "TZA": "United Republic of Tanzania",
-          "COD": "Congo", "COG": "Congo", "KOR": "Republic of Korea",
-          "PRK": "Democratic People's Republic of Korea", "VNM": "Viet Nam",
-          "LAO": "Lao People's Democratic Republic", "SYR": "Syrian Arab Republic",
-          "IRN": "Iran (Islamic Republic)", "RUS": "Russian Federation",
-          "GBR": "United Kingdom of Great Britain and Northern Ireland", "TUR": "Türkiye",
-          "VEN": "Venezuela (Bolivarian Republic of)", "BOL": "Bolivia (Plurinational State of)",
-          "MDA": "Republic of Moldova", "CIV": "Côte d'Ivoire", "PHL": "Philippines",
-          "EGY": "Egypt", "BRA": "Brazil", "IND": "India", "CHN": "China",
-        };
-        faoName = isoMapping[isoA3];
+      // EXHAUSTIVE ISO SEARCH (per Implementation Plan)
+      let isoA3 = props["ISO3166-1-Alpha-3"] || props.ISO_A3 || props.ADM0_A3 || props.gu_a3 || "";
+      
+      // Fallback for missing ISOs in natural earth dataset
+      if (isoA3 === "-99" || !isoA3) {
+          if (geoName === "France") isoA3 = "FRA";
+          else if (geoName === "Norway") isoA3 = "NOR";
+          else if (geoName === "Somaliland") isoA3 = "SOM";
+          else if (geoName === "Kosovo") isoA3 = "XKX";
       }
-      if (!faoName) faoName = geoName;
 
       // Ensure every feature has a unique numeric ID for feature-state targeting
       const numericId = featureIdCounter++;
       
       return {
         ...f,
-        id: numericId, // CRITICAL: Maplibre requires a top-level numeric ID for feature-state
+        id: numericId,
         properties: {
           ...f.properties,
-          mappedName: faoName
+          mappedName: geoName,
+          isoA3: isoA3 === "-99" ? "" : isoA3
         }
       };
     });
@@ -166,15 +130,30 @@ export default function GlobeView({ onPrediction, showSatellite = false, selecte
     if (!map.getSource('countries')) return;
 
     baseGeoData.features.forEach((feature: any) => {
-      const faoName = feature.properties.mappedName;
-      const scoreInfo = scoreMap[faoName];
+      const isoA3 = feature.properties.isoA3;
+      const scoreInfo = isoA3 ? scoreMap[isoA3] : undefined;
+      
+      // DECOUPLED JOIN: Try to find FAO name for timeseries even if score is missing
+      let faoName = scoreInfo?.country;
+      if (!faoName && isoA3) {
+         // Search reverse map
+         faoName = Object.keys(nameToIsoMap).find(k => nameToIsoMap[k] === isoA3);
+      }
 
-      let fillColor = scoreInfo ? scoreToFill(scoreInfo.resilience_score) : "rgba(100, 116, 139, 0.1)";
-      let strokeColor = scoreInfo ? scoreToColor(scoreInfo.resilience_score) : "#475569";
-      let displayYield = scoreInfo?.avg_yield || 0;
+      let fillColor = "rgba(100, 116, 139, 0.1)"; // Default: No Data
+      let strokeColor = "#475569";
+      let displayYield = 0;
       let isHistorical = false;
 
-      if (currentYear && timeseriesData && Object.keys(timeseriesData).length > 0) {
+      // Path A: Score-based coloring (if no year selected or default view)
+      if (scoreInfo) {
+          fillColor = scoreToFill(scoreInfo.resilience_score);
+          strokeColor = scoreToColor(scoreInfo.resilience_score);
+          displayYield = scoreInfo.avg_yield;
+      }
+
+      // Path B: Temporal overlay (if year selected)
+      if (faoName && currentYear && timeseriesData && Object.keys(timeseriesData).length > 0) {
         const countryTData = timeseriesData[faoName];
         if (countryTData && countryTData[currentYear.toString()] !== undefined) {
           const yieldVal = countryTData[currentYear.toString()];
@@ -217,11 +196,14 @@ export default function GlobeView({ onPrediction, showSatellite = false, selecte
     });
   }, [baseGeoData, scoreMap, currentYear, timeseriesData, hoveredCountryId, isGlobe]);
 
-  const handleCountryClick = useCallback(async (countryName: string, latlng: [number, number]) => {
-    const crop = scoreMap[countryName]?.crop;
-    if (!crop) return;
+  const handleCountryClick = useCallback(async (isoA3: string, latlng: [number, number]) => {
+    const scoreInfo = scoreMap[isoA3];
+    if (!scoreInfo) return;
     
-    setSelectedCountry(countryName);
+    const crop = scoreInfo.crop;
+    const countryName = scoreInfo.country; // Output from backend, correctly matching timeseries etc.
+    
+    setSelectedCountry(isoA3); // Storing isoA3 instead of just countryName helps linking popup
     setFlyTarget(latlng);
     setLoading(true);
     setPrediction(null);
@@ -231,7 +213,7 @@ export default function GlobeView({ onPrediction, showSatellite = false, selecte
 
     try {
       const result = await fetchPrediction(
-        countryName,
+        countryName, // Send FAO name back to API
         crop,
         2030,
         1.5
@@ -247,10 +229,17 @@ export default function GlobeView({ onPrediction, showSatellite = false, selecte
 
   const onClick = useCallback((event: any) => {
     const feature = event.features && event.features[0];
-    if (feature && feature.properties.hasData) {
-      handleCountryClick(feature.properties.mappedName, [event.lngLat.lat, event.lngLat.lng]);
+    if (feature && feature.properties.hasData && feature.properties.isoA3) {
+      handleCountryClick(feature.properties.isoA3, [event.lngLat.lat, event.lngLat.lng]);
     }
   }, [handleCountryClick]);
+
+  const stats = useMemo(() => {
+    const geoCount = baseGeoData?.features.length || 0;
+    const apiCount = scores.length;
+    const mappedCount = Object.keys(scoreMap).length;
+    return { geoCount, apiCount, mappedCount };
+  }, [baseGeoData, scores, scoreMap]);
 
   const onHover = useCallback((event: any) => {
     const feature = event.features && event.features[0];
@@ -304,6 +293,15 @@ export default function GlobeView({ onPrediction, showSatellite = false, selecte
 
   return (
     <div className="relative w-full h-full rounded-2xl overflow-hidden">
+      {/* Debug Overlay */}
+      <div className="absolute top-4 left-4 z-[2000] bg-slate-900/80 backdrop-blur-md p-3 rounded-lg border border-slate-700 text-[10px] text-slate-300 font-mono pointer-events-none">
+        <div className="flex items-center gap-2 mb-1 pb-1 border-b border-white/10 text-white font-bold text-[8px]">
+           <Activity className="w-3 h-3 text-emerald-400" /> DATA CONTRACT ACTIVE
+        </div>
+        <div>GEO FEATURES: {stats.geoCount}</div>
+        <div>API ROWS: {stats.apiCount}</div>
+        <div>JOINED ISO: {stats.mappedCount}</div>
+      </div>
       <Map
         ref={mapRef}
         // @ts-expect-error - preserveDrawingBuffer is required for html2canvas PDF export of the WebGL context
@@ -366,65 +364,78 @@ export default function GlobeView({ onPrediction, showSatellite = false, selecte
         )}
 
         {/* Show popup for selected country */}
-        {selectedCountry && flyTarget && scoreMap[selectedCountry] && (
-          <Popup
-            longitude={flyTarget[1]}
-            latitude={flyTarget[0]}
-            closeButton={false}
-            closeOnClick={false}
-            onClose={() => setSelectedCountry(null)}
-            anchor="bottom"
-            className="z-50"
-            style={{ zIndex: 50 }}
-          >
-            <div className="min-w-[200px] p-2 bg-white rounded-lg">
-              <div className="flex justify-between items-start mb-1">
-                <h3 className="text-base font-bold text-slate-800">{selectedCountry}</h3>
-                <button onClick={() => setSelectedCountry(null)} className="text-slate-400 hover:text-slate-600 text-lg font-bold">×</button>
-              </div>
+        {selectedCountry && flyTarget && scoreMap[selectedCountry] && (() => {
+          const scoreInfo = scoreMap[selectedCountry];
+          const faoName = scoreInfo.country;
+          const displayYearYield = (currentYear && timeseriesData && timeseriesData[faoName] && timeseriesData[faoName][currentYear.toString()] !== undefined) 
+            ? timeseriesData[faoName][currentYear.toString()] 
+            : undefined;
+          
+          return (
+            <Popup
+              longitude={flyTarget[1]}
+              latitude={flyTarget[0]}
+              closeButton={false}
+              closeOnClick={false}
+              onClose={() => setSelectedCountry(null)}
+              anchor="bottom"
+              className="z-50"
+              style={{ zIndex: 50 }}
+            >
+              <div className="min-w-[200px] p-2 bg-white rounded-lg">
+                <div className="flex justify-between items-start mb-1">
+                  <h3 className="text-base font-bold text-slate-800">{faoName}</h3>
+                  <button onClick={() => setSelectedCountry(null)} className="text-slate-400 hover:text-slate-600 text-lg font-bold">×</button>
+                </div>
 
-              {/* Dynamic Metric Display based on Timeline vs Overall */}
-              {currentYear && timeseriesData && timeseriesData[selectedCountry] && timeseriesData[selectedCountry][currentYear.toString()] !== undefined ? (
-                <div className="mb-2 p-2 bg-slate-50 rounded-lg border border-slate-100">
-                  <p className="text-xs text-slate-500 mb-1">{currentYear} Yield Output</p>
-                  <p className="text-xl font-bold text-slate-800">
-                    {timeseriesData[selectedCountry][currentYear.toString()].toFixed(2)} <span className="text-xs font-medium text-slate-500">t/ha</span>
-                  </p>
-                  <p className="text-[10px] text-slate-400 mt-1">
-                    Historical Mean: {(Object.values(timeseriesData[selectedCountry]).reduce((a, b) => a + b, 0) / Object.values(timeseriesData[selectedCountry]).length).toFixed(2)} t/ha
-                  </p>
-                </div>
-              ) : (
-                <div className="flex items-center gap-2 mb-2">
-                  <span
-                    className="px-2 py-0.5 rounded-full text-xs font-bold text-white"
-                    style={{ backgroundColor: scoreToColor(scoreMap[selectedCountry].resilience_score) }}
-                  >
-                    {scoreMap[selectedCountry].resilience_score}/10
-                  </span>
-                  <span className="text-xs text-slate-500">
-                    {scoreMap[selectedCountry].crop} • {scoreMap[selectedCountry].trend}
-                  </span>
-                </div>
-              )}
-              
-              {loading && <p className="text-xs text-slate-400 animate-pulse">Running prediction...</p>}
-              {prediction && !loading && (
-                <div className="text-xs space-y-1 border-t pt-2 mt-1 border-slate-200">
-                  <p className="font-medium text-slate-700">
-                    2030 Forecast (+1.5°C):
-                  </p>
-                  <p className="text-lg font-bold text-emerald-600">
-                    {prediction.predicted_yield_tonnes_ha} t/ha
-                  </p>
-                  <p className="text-slate-400">
-                    CI: [{prediction.confidence_low} — {prediction.confidence_high}]
-                  </p>
-                </div>
-              )}
-            </div>
-          </Popup>
-        )}
+                {/* Dynamic Metric Display based on Timeline vs Overall */}
+                {displayYearYield !== undefined && timeseriesData ? (
+                  <div className="mb-2 p-2 bg-slate-50 rounded-lg border border-slate-100">
+                    <p className="text-xs text-slate-500 mb-1">{currentYear} Yield Output</p>
+                    <p className="text-xl font-bold text-slate-800">
+                      {displayYearYield.toFixed(2)} <span className="text-xs font-medium text-slate-500">t/ha</span>
+                    </p>
+                    <p className="text-[10px] text-slate-400 mt-1">
+                      Historical Mean: {(Object.values(timeseriesData[faoName]).reduce((a, b) => a + b, 0) / Object.values(timeseriesData[faoName]).length).toFixed(2)} t/ha
+                    </p>
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-2 mb-2">
+                    <div className="flex items-center gap-2">
+                      <span
+                        className="px-2 py-0.5 rounded-full text-[10px] font-black text-white"
+                        style={{ backgroundColor: scoreToColor(scoreInfo.resilience_score) }}
+                      >
+                        r = {scoreInfo.correlation.toFixed(3)}
+                      </span>
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-tighter">
+                        {scoreInfo.crop}
+                      </span>
+                    </div>
+                    <div className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded border inline-block w-fit ${scoreInfo.trend === 'increasing' ? 'bg-emerald-50 text-emerald-600 border-emerald-100' : scoreInfo.trend === 'decreasing' ? 'bg-red-50 text-red-600 border-red-100' : 'bg-slate-50 text-slate-600 border-slate-100'}`}>
+                      Trend: {scoreInfo.trend}
+                    </div>
+                  </div>
+                )}
+                
+                {loading && <p className="text-xs text-slate-400 animate-pulse">Running prediction...</p>}
+                {prediction && !loading && (
+                  <div className="text-xs space-y-1 border-t pt-2 mt-1 border-slate-200">
+                    <p className="font-medium text-slate-700">
+                      2030 Forecast (+1.5°C):
+                    </p>
+                    <p className="text-lg font-bold text-emerald-600">
+                      {prediction.predicted_yield_tonnes_ha} t/ha
+                    </p>
+                    <p className="text-slate-400">
+                      CI: [{prediction.confidence_low} — {prediction.confidence_high}]
+                    </p>
+                  </div>
+                )}
+              </div>
+            </Popup>
+          );
+        })()}
       </Map>
 
       {/* Projection Toggle UI */}
@@ -452,7 +463,7 @@ export default function GlobeView({ onPrediction, showSatellite = false, selecte
       {/* Floating Legend */}
       <div className="absolute bottom-4 right-4 z-[1000] bg-white/80 backdrop-blur-md border border-white/40 rounded-xl px-4 py-3 shadow-lg pointer-events-none mb-16 md:mb-0">
         <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2">
-          {currentYear ? "Yield vs Historical Mean" : "Resilience Score"}
+          {currentYear ? "Yield vs Historical Mean" : "Pearson Correlation ($r$)"}
         </p>
         <div className="flex flex-col gap-1.5">
           {currentYear ? [
@@ -467,11 +478,11 @@ export default function GlobeView({ onPrediction, showSatellite = false, selecte
               <span className="text-slate-600 font-medium">{item.label}</span>
             </div>
           )) : [
-            { label: "8-10 Strong", color: "#10b981" },
-            { label: "6-8 Moderate", color: "#22d3ee" },
-            { label: "4-6 At Risk", color: "#fbbf24" },
-            { label: "1-4 Critical", color: "#ef4444" },
-            { label: "No Data", color: "#64748b" },
+          { label: "r > 0.5 (Strong)", color: "#10b981" },
+          { label: "r > 0.1 (Moderate)", color: "#22d3ee" },
+          { label: "r > -0.3 (Baseline)", color: "#fbbf24" },
+          { label: "r < -0.3 (Inverse)", color: "#ef4444" },
+          { label: "No Tracking", color: "#64748b" },
           ].map((item) => (
             <div key={item.label} className="flex items-center gap-2 text-xs">
               <div className="w-3 h-3 rounded-sm" style={{ backgroundColor: item.color }} />
