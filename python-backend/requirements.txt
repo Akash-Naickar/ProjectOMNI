@@ -1,8 +1,2 @@
-statsmodels
-prophet
-xgboost
-pandfastapi==0.110.1
-uvicorn==0.29.0
-python-multipart==0.0.9
 google-generativeai==0.4.1
 pycountry==23.12.11
