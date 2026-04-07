@@ -618,11 +618,13 @@ export default function PremiumDashboard() {
         initial={{ y: -50, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
         transition={{ type: "spring", stiffness: 200, damping: 20 }}
-        className="fixed top-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-6 px-8 py-3 bg-white/70 backdrop-blur-xl border border-white/40 shadow-lg rounded-full"
+        className="fixed top-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-6 px-8 py-3 bg-white/80 backdrop-blur-2xl border border-white/50 shadow-[0_8px_30px_rgb(0,0,0,0.08)] rounded-full"
       >
-        <div className="flex items-center gap-2 font-bold tracking-tight text-lg mr-4">
-          <Sprout className="w-6 h-6 text-emerald-500" />
-          <span>Project Omni</span>
+        <div className="flex items-center gap-2.5 font-black tracking-tighter text-xl mr-4 bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 to-cyan-600">
+          <div className="p-1.5 bg-gradient-to-br from-emerald-100 to-cyan-100 rounded-full shadow-inner">
+             <Sprout className="w-5 h-5 text-emerald-600" />
+          </div>
+          <span>Project OMNI</span>
         </div>
 
         {/* Country Filter */}
