@@ -133,8 +133,23 @@ export async function fetchTimeseriesMap(crop: string): Promise<TimeseriesData> 
   return data.yields;
 }
 
+let metadataCache: MetadataResponse | null = null;
+let metadataPromise: Promise<MetadataResponse> | null = null;
+
 export async function fetchMetadata(): Promise<MetadataResponse> {
-  return apiFetch<MetadataResponse>("/metadata");
+  if (metadataCache) return metadataCache;
+  if (metadataPromise) return metadataPromise;
+
+  metadataPromise = apiFetch<MetadataResponse>("/metadata").then(data => {
+    metadataCache = data;
+    metadataPromise = null;
+    return data;
+  }).catch(err => {
+    metadataPromise = null;
+    throw err;
+  });
+  
+  return metadataPromise;
 }
 
 export async function fetchPrediction(
