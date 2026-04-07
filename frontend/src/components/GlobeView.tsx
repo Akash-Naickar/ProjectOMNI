@@ -32,6 +32,8 @@ interface GlobeViewProps {
   timeseriesData?: TimeseriesData | null;
 }
 
+let cachedWorldGeoJson: GeoJSONType | null = null;
+
 export default function GlobeView({ onPrediction, showSatellite = false, selectedCrop, currentYear, timeseriesData }: GlobeViewProps) {
   const mapRef = useRef<MapRef>(null);
 
@@ -54,9 +56,16 @@ export default function GlobeView({ onPrediction, showSatellite = false, selecte
   }, [selectedCrop]);
 
   useEffect(() => {
+    if (cachedWorldGeoJson) {
+      setWorldGeoJson(cachedWorldGeoJson);
+      return;
+    }
     fetch("https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson")
       .then(res => res.json())
-      .then(data => setWorldGeoJson(data))
+      .then(data => {
+        cachedWorldGeoJson = data;
+        setWorldGeoJson(data);
+      })
       .catch(console.error);
   }, []);
 
