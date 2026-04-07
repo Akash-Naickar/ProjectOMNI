@@ -740,62 +740,62 @@ export default function PremiumDashboard() {
       >
         
         {/* Metric Card 1: Avg Yield */}
-        <motion.div variants={itemVariants} whileHover={{ y: -5 }} className="glass-card group">
+        <motion.div variants={itemVariants} whileHover={{ y: -5 }} className="glass-card group border border-slate-200/60 shadow-sm hover:shadow-md transition-all">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-sm font-medium text-slate-500 mb-1">Average Yield</p>
-              <h3 className="text-4xl font-bold tracking-tight text-slate-800">
-                {avgYield.toFixed(1)} <span className="text-xl font-medium text-slate-400">t/ha</span>
+              <p className="text-xs uppercase tracking-widest font-semibold text-slate-400 mb-1">Average Yield</p>
+              <h3 className="text-4xl font-black tracking-tighter text-slate-800 drop-shadow-sm">
+                {avgYield.toFixed(1)} <span className="text-lg font-bold text-slate-400 ml-1">t/ha</span>
               </h3>
             </div>
-            <div className="p-3 bg-emerald-100/50 rounded-xl group-hover:bg-emerald-100 transition-colors">
+            <div className="p-3 bg-emerald-50 rounded-2xl group-hover:bg-emerald-100 transition-colors shadow-inner">
               <Sprout className="w-6 h-6 text-emerald-600" />
             </div>
           </div>
-          <div className="mt-4 flex items-center gap-2 text-sm text-emerald-600 font-medium">
-            <span className="px-2 py-0.5 bg-emerald-100 rounded-full">
+          <div className="mt-4 flex items-center gap-2 text-xs font-semibold">
+            <span className="px-2.5 py-1 bg-emerald-100/80 text-emerald-700 rounded-full">
               {filteredTimeSeries.length} pts
             </span>
-            <span>{selectedCountry} • {selectedCrop}</span>
+            <span className="text-slate-500">{selectedCountry} • {selectedCrop}</span>
           </div>
         </motion.div>
 
         {/* Metric Card 2: Temp Anomaly */}
-        <motion.div variants={itemVariants} whileHover={{ y: -5 }} className="glass-card group">
+        <motion.div variants={itemVariants} whileHover={{ y: -5 }} className="glass-card group border border-slate-200/60 shadow-sm hover:shadow-md transition-all">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-sm font-medium text-slate-500 mb-1">Latest Temp Anomaly</p>
-              <h3 className="text-4xl font-bold tracking-tight text-slate-800">
-                +{latestTemp.toFixed(2)} <span className="text-xl font-medium text-slate-400">°C</span>
+              <p className="text-xs uppercase tracking-widest font-semibold text-slate-400 mb-1">Latest Temp Anomaly</p>
+              <h3 className="text-4xl font-black tracking-tighter text-slate-800 drop-shadow-sm">
+                +{latestTemp.toFixed(2)} <span className="text-lg font-bold text-slate-400 ml-1">°C</span>
               </h3>
             </div>
-            <div className="p-3 bg-amber-100/50 rounded-xl group-hover:bg-amber-100 transition-colors">
+            <div className="p-3 bg-amber-50 rounded-2xl group-hover:bg-amber-100 transition-colors shadow-inner">
               <ThermometerSun className="w-6 h-6 text-amber-500" />
             </div>
           </div>
-          <div className="mt-4 flex items-center gap-2 text-sm text-amber-500 font-medium">
-            <span className="px-2 py-0.5 bg-amber-100 rounded-full">
+          <div className="mt-4 flex items-center gap-2 text-xs font-semibold">
+            <span className={`px-2.5 py-1 rounded-full ${latestTemp > 0.8 ? "bg-amber-100/80 text-amber-700" : "bg-emerald-100/80 text-emerald-700"}`}>
               {latestTemp > 0.8 ? "High" : "Moderate"}
             </span>
-            <span>Climate pressure {latestTemp > 0.8 ? "elevated" : "normal"}</span>
+            <span className="text-slate-500">Climate pressure {latestTemp > 0.8 ? "elevated" : "normal"}</span>
           </div>
         </motion.div>
 
         {/* Metric Card 3: Pearson Correlation */}
-        <motion.div variants={itemVariants} whileHover={{ y: -5 }} className="glass-card group border-l-4 border-cyan-500">
+        <motion.div variants={itemVariants} whileHover={{ y: -5 }} className="glass-card group border-l-4 border-cyan-500 shadow-sm hover:shadow-md transition-all">
           <div className="flex justify-between items-start">
             <div>
-              <p className="text-sm font-medium text-slate-500 mb-1">Pearson Correlation (r)</p>
-              <h3 className="text-4xl font-bold tracking-tight text-slate-800">
+              <p className="text-xs uppercase tracking-widest font-semibold text-slate-400 mb-1">Pearson Correlation (r)</p>
+              <h3 className="text-4xl font-black tracking-tighter text-slate-800 drop-shadow-sm">
                 {currentScore?.correlation?.toFixed(3) || "—"}
               </h3>
             </div>
-            <div className="p-3 bg-cyan-100/50 rounded-xl group-hover:bg-cyan-100 transition-colors">
+            <div className="p-3 bg-cyan-50 rounded-2xl group-hover:bg-cyan-100 transition-colors shadow-inner">
               <Activity className="w-6 h-6 text-cyan-600" />
             </div>
           </div>
-          <div className="mt-4 flex items-center gap-2 text-sm text-cyan-600 font-medium">
-            <span className={`px-2 py-0.5 rounded-full ${currentScore?.trend === "increasing" ? "bg-emerald-100 text-emerald-600" : currentScore?.trend === "decreasing" ? "bg-red-100 text-red-600" : "bg-slate-100 text-slate-600"}`}>
+          <div className="mt-4 flex items-center gap-2 text-xs font-semibold">
+            <span className={`px-2.5 py-1 rounded-full ${currentScore?.trend === "increasing" ? "bg-emerald-100/80 text-emerald-700" : currentScore?.trend === "decreasing" ? "bg-red-100/80 text-red-700" : "bg-slate-100/80 text-slate-700"}`}>
               Trend: {currentScore?.trend || "—"}
             </span>
           </div>
