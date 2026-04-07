@@ -6,7 +6,7 @@ import type { MapRef } from "react-map-gl/maplibre";
 import 'maplibre-gl/dist/maplibre-gl.css';
 import type { GeoJSON as GeoJSONType } from "geojson";
 import { fetchResilienceScores, type ResilienceScore, type PredictionResult, fetchPrediction, type TimeseriesData } from "../api";
-import { Globe, Map as MapIcon, Activity } from "lucide-react";
+import { Globe, Map as MapIcon, Activity, TrendingUp } from "lucide-react";
 
 function scoreToColor(score: number): string {
   if (score >= 8) return "#10b981";     // emerald-500
@@ -399,13 +399,14 @@ export default function GlobeView({ onPrediction, showSatellite = false, selecte
 
                 {/* Dynamic Metric Display based on Timeline vs Overall */}
                 {displayYearYield !== undefined && timeseriesData ? (
-                  <div className="mb-2 p-2 bg-slate-50 rounded-lg border border-slate-100">
-                    <p className="text-xs text-slate-500 mb-1">{currentYear} Yield Output</p>
-                    <p className="text-xl font-bold text-slate-800">
-                      {displayYearYield.toFixed(2)} <span className="text-xs font-medium text-slate-500">t/ha</span>
+                  <div className="mb-3 p-2.5 bg-slate-50 rounded-lg border border-slate-200 shadow-sm">
+                    <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-1">{currentYear} Yield Output</p>
+                    <p className="text-2xl font-black tracking-tighter text-slate-800 drop-shadow-sm">
+                      {displayYearYield.toFixed(2)} <span className="text-xs font-semibold text-slate-500 ml-0.5">t/ha</span>
                     </p>
-                    <p className="text-[10px] text-slate-400 mt-1">
-                      Historical Mean: {(Object.values(timeseriesData[faoName]).reduce((a, b) => a + b, 0) / Object.values(timeseriesData[faoName]).length).toFixed(2)} t/ha
+                    <p className="text-[10px] font-semibold text-slate-400 mt-1 flex items-center gap-1">
+                      <TrendingUp className="w-3 h-3 text-emerald-500" />
+                      Mean: {(Object.values(timeseriesData[faoName]).reduce((a, b) => a + b, 0) / Object.values(timeseriesData[faoName]).length).toFixed(2)} t/ha
                     </p>
                   </div>
                 ) : (
@@ -427,16 +428,16 @@ export default function GlobeView({ onPrediction, showSatellite = false, selecte
                   </div>
                 )}
                 
-                {loading && <p className="text-xs text-slate-400 animate-pulse">Running prediction...</p>}
+                {loading && <p className="text-[10px] font-semibold text-emerald-600 uppercase tracking-widest animate-pulse mt-2 flex items-center gap-2"><div className="w-2 h-2 rounded-full bg-emerald-500 animate-bounce"/>Running AI prediction...</p>}
                 {prediction && !loading && (
-                  <div className="text-xs space-y-1 border-t pt-2 mt-1 border-slate-200">
-                    <p className="font-medium text-slate-700">
-                      2030 Forecast (+1.5°C):
+                  <div className="text-xs space-y-1.5 border-t pt-3 mt-2 border-slate-200">
+                    <p className="text-[10px] uppercase font-bold tracking-widest text-emerald-600">
+                      2030 AI Forecast (+1.5°C)
                     </p>
-                    <p className="text-lg font-bold text-emerald-600">
-                      {prediction.predicted_yield_tonnes_ha} t/ha
+                    <p className="text-xl font-black tracking-tighter text-emerald-600 drop-shadow-sm">
+                      {prediction.predicted_yield_tonnes_ha} <span className="text-xs font-bold text-emerald-500/70">t/ha</span>
                     </p>
-                    <p className="text-slate-400">
+                    <p className="text-[9px] font-mono text-slate-400 bg-slate-50 py-0.5 px-1.5 rounded-md inline-block">
                       CI: [{prediction.confidence_low} — {prediction.confidence_high}]
                     </p>
                   </div>
@@ -470,9 +471,10 @@ export default function GlobeView({ onPrediction, showSatellite = false, selecte
       </div>
 
       {/* Floating Legend */}
-      <div className="absolute bottom-4 right-4 z-[1000] bg-white/80 backdrop-blur-md border border-white/40 rounded-xl px-4 py-3 shadow-lg pointer-events-none mb-16 md:mb-0">
-        <p className="text-[10px] font-semibold text-slate-500 uppercase tracking-wider mb-2">
-          {currentYear ? "Yield vs Historical Mean" : "Pearson Correlation ($r$)"}
+      <div className="absolute bottom-4 right-4 z-[1000] bg-white/90 backdrop-blur-xl border border-white/50 rounded-2xl px-5 py-4 shadow-xl pointer-events-none mb-16 md:mb-0 transition-all duration-300">
+        <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
+          <Activity className="w-3.5 h-3.5" />
+          {currentYear ? "Yield vs Historical Mean" : "Pearson Correlation (r)"}
         </p>
         <div className="flex flex-col gap-1.5">
           {currentYear ? [
