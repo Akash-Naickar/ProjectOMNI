@@ -636,7 +636,7 @@ def load_and_train():
             logging.info(f"Leading Climate-Stable Region: {resilience_scores[0]['country']} - {resilience_scores[0]['crop']}")
 
         # Startup Coverage Assertion
-        unique_isos = set(get_iso3(s["country"]) for s in all_scores_list if get_iso3(s["country"]))
+        unique_isos = set(iso for s in all_scores_list if (iso := get_iso3(s["country"])))
         coverage_pct = (len(unique_isos) / 245) * 100 # Baseline based on total FAO countries seen in audit
         logging.info(f"[Startup] ISO Coverage: {len(unique_isos)} countries ({coverage_pct:.1f}%)")
         
