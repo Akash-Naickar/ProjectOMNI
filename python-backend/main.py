@@ -4,6 +4,7 @@ import logging
 import math
 import os
 import pycountry
+import functools
 
 import logging
 import math
@@ -48,6 +49,7 @@ def load_registry(filename):
 COUNTRY_REGISTRY = load_registry("country_registry.json")
 CROP_REGISTRY = load_registry("crop_registry.json")
 
+@functools.lru_cache(maxsize=None)
 def get_iso3(country_name: str) -> str | None:
     if not country_name:
         return None
