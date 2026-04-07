@@ -19,13 +19,18 @@ export default function Timeline({
   onPlayToggle,
   disabled = false
 }: TimelineProps) {
+  const currentYearRef = useRef(currentYear);
+  useEffect(() => {
+    currentYearRef.current = currentYear;
+  }, [currentYear]);
+
   // Auto-play logic
   useEffect(() => {
     let interval: NodeJS.Timeout;
     if (isPlaying && !disabled) {
       interval = setInterval(() => {
-        if (currentYear < maxYear) {
-          onChange(currentYear + 1);
+        if (currentYearRef.current < maxYear) {
+          onChange(currentYearRef.current + 1);
         } else {
           // Pause or loop when reaching the end
           onPlayToggle(); 
@@ -33,7 +38,7 @@ export default function Timeline({
       }, 300); // Advanced time every 300ms
     }
     return () => clearInterval(interval);
-  }, [isPlaying, currentYear, maxYear, onChange, onPlayToggle, disabled]);
+  }, [isPlaying, maxYear, onChange, onPlayToggle, disabled]);
 
   return (
     <div className={`absolute bottom-8 left-1/2 transform -translate-x-1/2 w-[90%] md:w-[600px] z-50 transition-opacity duration-300 ${disabled ? 'opacity-50 pointer-events-none' : 'opacity-100'}`}>
