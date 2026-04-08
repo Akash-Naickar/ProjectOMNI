@@ -770,7 +770,12 @@ export default function PremiumDashboard() {
       >
         
         {/* Metric Card 1: Avg Yield */}
-        <motion.div variants={itemVariants} whileHover={{ y: -5 }} className="glass-card group border border-slate-200/60 shadow-sm hover:shadow-md transition-all">
+        <motion.div 
+          variants={itemVariants} 
+          whileHover={{ y: -8, scale: 1.02, boxShadow: "0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1)" }} 
+          className="glass-card group border border-slate-200/60 shadow-sm transition-all duration-300"
+        >
+
           <div className="flex justify-between items-start">
             <div>
               <p className="text-xs uppercase tracking-widest font-semibold text-slate-400 mb-1">Average Yield</p>
