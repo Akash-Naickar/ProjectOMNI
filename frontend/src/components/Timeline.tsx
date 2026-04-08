@@ -1,5 +1,6 @@
 import React, { useEffect, useRef } from 'react';
 import { Play, Pause } from 'lucide-react';
+import { motion } from 'framer-motion';
 
 interface TimelineProps {
   minYear: number;
@@ -54,8 +55,11 @@ export default function Timeline({
         </div>
 
         <div className="flex items-center gap-4">
-          <button 
+          <motion.button 
             onClick={onPlayToggle}
+            whileHover={{ scale: 1.1, boxShadow: "0 0 15px rgba(16, 185, 129, 0.4)" }}
+            whileTap={{ scale: 0.95 }}
+            transition={{ type: "spring", stiffness: 400, damping: 17 }}
             className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-full bg-slate-800 hover:bg-slate-700 border border-slate-600 transition-colors text-white focus:outline-none focus:ring-2 focus:ring-emerald-500"
             aria-label={isPlaying ? "Pause" : "Play"}
           >
@@ -64,7 +68,7 @@ export default function Timeline({
             ) : (
               <Play className="w-5 h-5 ml-1 fill-current" />
             )}
-          </button>
+          </motion.button>
           
           <input 
             type="range" 
