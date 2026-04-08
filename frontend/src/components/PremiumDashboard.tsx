@@ -755,13 +755,15 @@ export default function PremiumDashboard() {
             <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Satellite</span>
             <button
               onClick={() => setShowSatellite(!showSatellite)}
-              className={`relative inline-flex h-5 w-9 shrink-0 cursor-pointer items-center justify-center rounded-full transition-colors duration-200 ease-in-out focus:outline-none ${
-                showSatellite ? 'bg-emerald-500' : 'bg-slate-200'
+              className={`relative inline-flex h-5 w-10 shrink-0 cursor-pointer items-center rounded-full transition-all duration-300 ease-in-out focus:outline-none ${
+                showSatellite ? 'bg-emerald-500 shadow-[0_0_12px_rgba(16,185,129,0.4)]' : 'bg-slate-300'
               }`}
             >
-              <span
-                className={`transform transition duration-200 ease-in-out inline-block h-3 w-3 rounded-full bg-white shadow ring-0 ${
-                  showSatellite ? 'translate-x-2' : '-translate-x-2'
+              <motion.span
+                layout
+                transition={{ type: "spring", stiffness: 500, damping: 30 }}
+                className={`inline-block h-3.5 w-3.5 rounded-full bg-white shadow-sm ring-0 ${
+                  showSatellite ? 'ml-5.5' : 'ml-1'
                 }`}
               />
             </button>
