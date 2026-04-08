@@ -76,7 +76,7 @@ export default function Timeline({
             max={maxYear} 
             value={currentYear} 
             onChange={(e) => onChange(parseInt(e.target.value))}
-            className="flex-grow h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-emerald-500"
+            className="flex-grow h-1.5 bg-slate-700/50 rounded-lg appearance-none cursor-pointer accent-emerald-500 premium-slider"
           />
         </div>
       </div>
