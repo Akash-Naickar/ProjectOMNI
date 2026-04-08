@@ -622,17 +622,26 @@ export default function PremiumDashboard() {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-slate-50 flex items-center justify-center">
-        <div className="glass-card max-w-md text-center">
-          <p className="text-red-500 font-semibold mb-2">Connection Error</p>
-          <p className="text-slate-500 text-sm">{error}</p>
+      <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
+        <motion.div 
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="glass-card max-w-md w-full text-center p-8 border border-red-100 shadow-[0_20px_50px_rgba(239,68,68,0.1)]"
+        >
+          <div className="w-16 h-16 bg-red-50 rounded-2xl flex items-center justify-center mx-auto mb-6">
+            <AlertTriangle className="w-8 h-8 text-red-500" />
+          </div>
+          <h2 className="text-xl font-bold text-slate-800 mb-2">Connection Protocol Failed</h2>
+          <p className="text-slate-500 text-sm leading-relaxed mb-8">
+            {error}
+          </p>
           <button
             onClick={() => window.location.reload()}
-            className="mt-4 px-4 py-2 bg-emerald-500 text-white rounded-lg text-sm font-medium hover:bg-emerald-600 transition-colors"
+            className="w-full py-3 bg-slate-900 text-white rounded-xl text-sm font-bold hover:bg-slate-800 transition-all active:scale-[0.98] shadow-lg shadow-slate-200"
           >
-            Retry
+            Re-establish Connection
           </button>
-        </div>
+        </motion.div>
       </div>
     );
   }
