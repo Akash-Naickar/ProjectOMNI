@@ -703,14 +703,16 @@ export default function PremiumDashboard() {
         <div className="flex items-center gap-1 ml-2 bg-slate-100/60 rounded-full p-0.5">
           <button
             onClick={() => setActiveView("chart")}
-            title="Chart View"
+            title="Switch to detailed historical yield charts"
+            aria-label="Chart View"
             className={`p-1.5 rounded-full transition-all ${activeView === "chart" ? "bg-white shadow-sm text-emerald-600" : "text-slate-400 hover:text-slate-600"}`}
           >
             <BarChart3 className="w-4 h-4" />
           </button>
           <button
             onClick={() => setActiveView("globe")}
-            title="Globe View"
+            title="Switch to 3D global distribution view"
+            aria-label="Globe View"
             className={`p-1.5 rounded-full transition-all ${activeView === "globe" ? "bg-white shadow-sm text-emerald-600" : "text-slate-400 hover:text-slate-600"}`}
           >
             <Globe className="w-4 h-4" />
