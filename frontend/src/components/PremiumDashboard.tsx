@@ -606,7 +606,14 @@ export default function PremiumDashboard() {
           animate={{ opacity: 1, scale: 1 }}
           className="flex flex-col items-center gap-4"
         >
-          <Loader2 className="w-10 h-10 text-emerald-500 animate-spin" />
+          <div className="relative w-16 h-16">
+            <div className="absolute inset-0 rounded-full border-4 border-slate-200" />
+            <motion.div 
+              animate={{ rotate: 360 }}
+              transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+              className="absolute inset-0 rounded-full border-4 border-t-emerald-500 border-r-cyan-500 border-b-transparent border-l-transparent" 
+            />
+          </div>
           <p className="text-slate-500 font-medium">Connecting to Climate API...</p>
         </motion.div>
       </div>
