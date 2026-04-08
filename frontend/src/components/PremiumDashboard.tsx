@@ -663,7 +663,12 @@ export default function PremiumDashboard() {
             <ChevronDown className="w-4 h-4 ml-1" />
           </motion.button>
           {showCountryDropdown && (
-            <div className="absolute top-full left-0 mt-2 max-h-60 overflow-y-auto bg-white/90 backdrop-blur-xl border border-white/40 shadow-xl rounded-xl min-w-[140px] z-50">
+            <motion.div 
+              initial={{ opacity: 0, y: -10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              className="absolute top-full left-0 mt-2 max-h-60 overflow-y-auto bg-white/90 backdrop-blur-xl border border-white/40 shadow-xl rounded-xl min-w-[140px] z-50"
+            >
               {availableCountries.map((c) => (
                 <button
                   key={c}
@@ -673,7 +678,7 @@ export default function PremiumDashboard() {
                   {c}
                 </button>
               ))}
-            </div>
+            </motion.div>
           )}
 
           {/* Crop Filter */}
@@ -687,7 +692,12 @@ export default function PremiumDashboard() {
             <ChevronDown className="w-4 h-4 ml-1" />
           </motion.button>
           {showCropDropdown && (
-            <div className="absolute top-full right-0 mt-2 max-h-60 overflow-y-auto bg-white/90 backdrop-blur-xl border border-white/40 shadow-xl rounded-xl min-w-[140px] z-50">
+            <motion.div 
+              initial={{ opacity: 0, y: -10, scale: 0.95 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              className="absolute top-full right-0 mt-2 max-h-60 overflow-y-auto bg-white/90 backdrop-blur-xl border border-white/40 shadow-xl rounded-xl min-w-[140px] z-50"
+            >
               {availableCrops.map((c) => (
                 <button
                   key={c}
@@ -697,7 +707,7 @@ export default function PremiumDashboard() {
                   {c}
                 </button>
               ))}
-            </div>
+            </motion.div>
           )}
         </div>
 
