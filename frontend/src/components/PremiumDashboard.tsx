@@ -66,16 +66,25 @@ const itemVariants = {
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     return (
-      <div className="bg-white/80 backdrop-blur-md border border-white/50 shadow-xl rounded-xl p-4 text-slate-800">
-        <p className="font-semibold text-lg mb-2">Year: {label}</p>
-        <div className="flex flex-col gap-1">
-          <p className="text-emerald-600 font-medium">
-            Yield: <span className="font-bold">{payload[0]?.value?.toFixed(2)} t/ha</span>
-          </p>
-          {payload[1] && (
-            <p className="text-amber-500 font-medium">
-              Temp Anomaly: <span className="font-bold">+{payload[1]?.value?.toFixed(2)}°C</span>
+      <div className="bg-white/90 backdrop-blur-xl border border-emerald-500/10 shadow-[0_20px_50px_rgba(0,0,0,0.1)] rounded-2xl p-5 text-slate-800 min-w-[180px]">
+        <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-100">
+          <p className="font-bold text-slate-500 text-xs uppercase tracking-widest">Growth Year</p>
+          <span className="px-2 py-0.5 bg-emerald-50 text-emerald-600 rounded-md text-xs font-black tracking-tight">{label}</span>
+        </div>
+        <div className="space-y-3">
+          <div className="flex flex-col">
+            <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Agricultural Yield</p>
+            <p className="text-emerald-600 font-black text-xl tracking-tighter">
+              {payload[0]?.value?.toFixed(2)} <span className="text-[10px] font-bold text-emerald-400">t/ha</span>
             </p>
+          </div>
+          {payload[1] && (
+            <div className="flex flex-col pt-2 border-t border-slate-50">
+              <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mb-0.5">Temp Anomaly</p>
+              <p className="text-amber-500 font-black text-xl tracking-tighter">
+                +{payload[1]?.value?.toFixed(2)}<span className="text-[10px] font-bold text-amber-400">°C</span>
+              </p>
+            </div>
           )}
         </div>
       </div>
@@ -112,22 +121,37 @@ const ComparativeTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     const data = payload[0].payload;
     return (
-      <div className="bg-slate-900/90 backdrop-blur-md border border-slate-700 shadow-xl rounded-xl p-4 text-white min-w-[200px]">
-        <div className="flex items-center gap-2 mb-2 pb-2 border-b border-slate-700">
-          <div className="w-3 h-3 rounded-full" style={{ backgroundColor: data.color }} />
-          <p className="font-bold text-lg uppercase tracking-wider">{label}</p>
+      <div className="bg-slate-900/95 backdrop-blur-2xl border border-slate-700/50 shadow-[0_25px_60px_rgba(0,0,0,0.3)] rounded-2xl p-5 text-white min-w-[220px]">
+        <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-700/50">
+          <div className="flex items-center gap-2">
+            <div className="w-2.5 h-2.5 rounded-full shadow-[0_0_8px_rgba(255,255,255,0.3)]" style={{ backgroundColor: data.color || '#10b981' }} />
+            <p className="font-black text-xs uppercase tracking-[0.1em] text-slate-400">Model: {label}</p>
+          </div>
+          <Bot className="w-3.5 h-3.5 text-slate-500" />
         </div>
-        <div className="space-y-1">
-          <p className="text-slate-300 text-sm flex justify-between">
-            <span>Prediction:</span> 
-            <span className="font-bold text-white ml-4">{data.y.toFixed(2)} t/ha</span>
-          </p>
-          <p className="text-slate-400 text-xs flex justify-between">
-            <span>95% CI Range:</span>
-            <span className="font-mono ml-4">[{data.low.toFixed(1)} — {data.high.toFixed(1)}]</span>
-          </p>
-          <p className="text-slate-500 text-xs mt-2 pt-2 border-t border-slate-800 leading-tight">
-            *Confidence interval reflects model uncertainty and historical variance.
+        <div className="space-y-4">
+          <div>
+            <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider mb-1">Predicted Yield</p>
+            <p className="text-2xl font-black tracking-tighter text-white">
+              {data.y.toFixed(2)} <span className="text-xs font-bold text-slate-500">t/ha</span>
+            </p>
+          </div>
+          <div className="bg-slate-800/50 rounded-xl p-3 border border-slate-700/30">
+            <p className="text-[9px] text-slate-500 font-bold uppercase tracking-[0.1em] mb-2">95% Confidence Interval</p>
+            <div className="flex items-center gap-3">
+              <div className="flex-1 h-1.5 bg-slate-700 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-gradient-to-r from-transparent via-emerald-500 to-transparent opacity-60"
+                  style={{ width: '100%' }}
+                />
+              </div>
+              <span className="font-mono text-[10px] text-emerald-400 font-bold">
+                [{data.low.toFixed(2)} — {data.high.toFixed(2)}]
+              </span>
+            </div>
+          </div>
+          <p className="text-[9px] text-slate-500 leading-relaxed font-medium italic">
+            *Interval reflects stochastic model uncertainty and historical climate variance.
           </p>
         </div>
       </div>
@@ -716,7 +740,8 @@ export default function PremiumDashboard() {
         <div className="flex items-center gap-1 ml-4 bg-slate-100/60 rounded-full p-0.5">
           <button
             onClick={handleExportCSV}
-            title="Export CSV Data"
+            title="Download historical yield data as CSV"
+            aria-label="Export to CSV"
             className="flex items-center gap-2 px-3 py-1.5 rounded-full transition-all text-slate-600 hover:bg-white hover:shadow-sm"
           >
             <Download className="w-4 h-4 text-emerald-600" />
@@ -724,7 +749,8 @@ export default function PremiumDashboard() {
           </button>
           <button
             onClick={handleExportPDF}
-            title="Export Dashboard PDF"
+            title="Generate a PDF report of the current dashboard"
+            aria-label="Export to PDF"
             className="flex items-center gap-2 px-3 py-1.5 rounded-full transition-all text-slate-600 hover:bg-white hover:shadow-sm"
           >
             <FileText className="w-4 h-4 text-emerald-600" />
